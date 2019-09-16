@@ -6,26 +6,10 @@ To conduct our experiments, **Openjdk 8 JDK / Oracle Java 8**  and **Python 2.7*
 
 There are 4 main directories here:
 
-* *bin* : Main entry of the experiments. 
-  * *workload_test.sh* : 
-  * *delay_test.sh* : 
-  * *jitter_test.sh* : 
-  * *stop.sh* :
-  * *delete.sh* :
-  * *stop-and-delete.sh* :
-  * *kill.sh* :
+* *bin* : Main entry of the experiments, including the bash scripts to start / terminate batch experiments automatically. 
 * *CASSANDRA* : The source code of modified Cassandra for the ASC experiments, the bash scripts to configure and run Cassandra instances, as well as Cassandra node files (including configuration, data and logs). 
-  * *cassandra* :
-  * *install-cassandra.sh* :
-  * *cassandra.sh* :
-  * stop.sh :
-  * *delete.sh* :
-  * *stop-and-delete.sh* :
 * *YCSB* : The bash scripts of the configuration of YCSB workloads, the generation of traces, the calculation of metrics and the visualization of results. 
-  * *bin* :
-  * *lib* :
-  * *workloads* :
-* <span id="traces">*traces*</span> : Results generated in experiments and displayed in figures. 
+* <span id="traces">*traces*</span> : The generated results, calculated metrics and plotted figures. 
 
 
 
@@ -244,7 +228,7 @@ To transfer the above statistics into figures:
 
 `python result_display.py {dirname}`
 
-***Attention: Ensure the paramter names of display_name_list in conf.py are what you desire before the visualization. Only tunable paramters with multiple optional values will be plot into figures.*** 
+***Attention: Ensure the parameter names in display_name_list in conf.py are what you want to plot figures before the visualization. Only those tunable paramters with multiple optional values will be plot into figures.*** 
 
 
 
