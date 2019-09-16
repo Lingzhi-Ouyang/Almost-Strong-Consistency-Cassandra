@@ -102,6 +102,9 @@ public final class MessagingService implements MessagingServiceMBean
     private boolean allNodesAtLeast22 = true;
     private boolean allNodesAtLeast30 = true;
 
+    private static final int intraDelay = Integer.valueOf(System.getProperty("intraDelay", "5"));
+    private static final int interDelay = Integer.valueOf(System.getProperty("interDelay", "25"));
+
     /* All verb handler identifiers */
     public enum Verb
     {
@@ -721,6 +724,7 @@ public final class MessagingService implements MessagingServiceMBean
                       boolean allowHints)
     {
         int id = addCallback(handler, message, to, message.getTimeout(), handler.consistencyLevel, allowHints);
+//        logger.info("sendRR to {}, message:{}, ID:{}", to, message, id);
         sendOneWay(message.withParameter(FAILURE_CALLBACK_PARAM, ONE_BYTE), id, to);
         return id;
     }
@@ -755,25 +759,74 @@ public final class MessagingService implements MessagingServiceMBean
             if (!ms.allowOutgoingMessage(message, id, to))
                 return;
 
-        String remoteDC = DatabaseDescriptor.getEndpointSnitch().getDatacenter(to);
-        String localDC = DatabaseDescriptor.getEndpointSnitch().getDatacenter(FBUtilities.getBroadcastAddress());
-        try
-        {
-            if (remoteDC.equals(localDC)) {
-                Thread.sleep(random.nextInt(5));
-            } else {
-                Thread.sleep(random.nextInt(16) + 15);
-            }
-        }
-        catch (InterruptedException e)
-        {
-            logger.trace("Adding latency interrupted {}", e.getStackTrace());
-        }
+//        String remoteDC = DatabaseDescriptor.getEndpointSnitch().getDatacenter(to);
+//        String localDC = DatabaseDescriptor.getEndpointSnitch().getDatacenter(FBUtilities.getBroadcastAddress());
+//        /*
+//        // Delay in uniform distribution.
+//        if (remoteDC.equals(localDC)) {
+//            Thread.sleep(random.nextInt(5));
+//        } else {
+//            Thread.sleep(random.nextInt(30) + 15);
+//        }
+//        */
+
+        // Delay in normal distribution.
+//        long delay;
+//        if (remoteDC.equals(localDC))
+//            delay = Math.round((random.nextGaussian() / 5 + 1)* intraDelay);
+//        else
+//            delay = Math.round((random.nextGaussian() / 5 + 1)* interDelay);
+//        if (message.verb == Verb.MUTATION || message.verb == Verb.READ || message.verb == Verb.REQUEST_RESPONSE)
+//            logger.info("{} sending {} to {}@{}, delay:{}", FBUtilities.getBroadcastAddress(), message, id, to, delay);
+//        if (delay > 0) {
+//            try {
+//                Thread.sleep(delay);
+//            } catch (InterruptedException e1) {
+//                e1.printStackTrace();
+//            }
+//        }
+
+//        logger.info("{} sending {} to {}@{}, finished-delay", FBUtilities.getBroadcastAddress(), message.verb, id, to);
         // get pooled connection (really, connection queue)
         OutboundTcpConnection connection = getConnection(to, message);
-
         // write it
         connection.enqueue(message, id);
+    }
+
+    /**
+     * Set delay before sending a message out. Delay value depends on whether
+     * the given target endpoint is in the same DC or not.
+     *
+     * @param to      endpoint to which the message needs to be sent
+     */
+    public void setDelay(InetAddress to)
+    {
+        String remoteDC = DatabaseDescriptor.getEndpointSnitch().getDatacenter(to);
+        String localDC = DatabaseDescriptor.getEndpointSnitch().getDatacenter(FBUtilities.getBroadcastAddress());
+        /*
+        // Delay in uniform distribution.
+        if (remoteDC.equals(localDC)) {
+            Thread.sleep(random.nextInt(5));
+        } else {
+            Thread.sleep(random.nextInt(30) + 15);
+        }
+        */
+
+        // Delay in normal distribution.
+        long delay;
+        if (remoteDC.equals(localDC))
+            delay = Math.round((random.nextGaussian() / 5 + 1)* intraDelay);
+        else
+            delay = Math.round((random.nextGaussian() / 5 + 1)* interDelay);
+//        logger.info("delay {} to {}", delay, to);
+        if (delay > 0) {
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            }
+        }
+
     }
 
     public <T> AsyncOneResponse<T> sendRR(MessageOut message, InetAddress to)
@@ -835,7 +888,8 @@ public final class MessagingService implements MessagingServiceMBean
         for (IMessageSink ms : messageSinks)
             if (!ms.allowIncomingMessage(message, id))
                 return;
-
+        if (message.verb == Verb.REQUEST_RESPONSE || message.verb == Verb.READ || message.verb == Verb.MUTATION)
+            logger.info("message: {}, ID: {}", message, id);
         Runnable runnable = new MessageDeliveryTask(message, id);
         LocalAwareExecutorService stage = StageManager.getStage(message.getMessageType());
         assert stage != null : "No stage for message type " + message.verb;

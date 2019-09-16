@@ -43,6 +43,8 @@ public class DataResolver extends ResponseResolver
 {
     private final List<AsyncOneResponse> repairResults = Collections.synchronizedList(new ArrayList<>());
 
+    private static final boolean allowForegroundRepair = Boolean.valueOf(System.getProperty("allowForegroundRepair", "False"));
+
     public DataResolver(Keyspace keyspace, ReadCommand command, ConsistencyLevel consistency, int maxResponseCount)
     {
         super(keyspace, command, consistency, maxResponseCount);
@@ -64,6 +66,7 @@ public class DataResolver extends ResponseResolver
         for (int i = 0; i < count; i++)
         {
             MessageIn<ReadResponse> msg = responses.get(i);
+//            logger.info("resolve, response.get():{}", msg);
             iters.add(msg.payload.makeIterator(command));
             sources[i] = msg.from;
         }
@@ -71,8 +74,11 @@ public class DataResolver extends ResponseResolver
         // Even though every responses should honor the limit, we might have more than requested post reconciliation,
         // so ensure we're respecting the limit.
         DataLimits.Counter counter = command.limits().newCounter(command.nowInSec(), true);
+
         return counter.applyTo(mergeWithShortReadProtection(iters, sources, counter));
     }
+
+
 
     private PartitionIterator mergeWithShortReadProtection(List<UnfilteredPartitionIterator> results, InetAddress[] sources, DataLimits.Counter resultCounter)
     {
@@ -92,6 +98,7 @@ public class DataResolver extends ResponseResolver
 
         return UnfilteredPartitionIterators.mergeAndFilter(results, command.nowInSec(), listener);
     }
+
 
     private class RepairMergeListener implements UnfilteredPartitionIterators.MergeListener
     {
@@ -234,6 +241,7 @@ public class DataResolver extends ResponseResolver
                 return currentRows[i];
             }
 
+
             public void onMergedPartitionLevelDeletion(DeletionTime mergedDeletion, DeletionTime[] versions)
             {
                 for (int i = 0; i < versions.length; i++)
@@ -280,8 +288,13 @@ public class DataResolver extends ResponseResolver
                 }
             }
 
+
             public void close()
             {
+                // Forbid foreground read repair.
+//                logger.info("Allow foreground repair:{}", allowForegroundRepair);
+                if (!allowForegroundRepair) return;
+                // Allow foreground read repair.
                 for (int i = 0; i < repairs.length; i++)
                 {
                     if (repairs[i] == null)
@@ -290,10 +303,35 @@ public class DataResolver extends ResponseResolver
                     // use a separate verb here because we don't want these to be get the white glove hint-
                     // on-timeout behavior that a "real" mutation gets
                     Tracing.trace("Sending read-repair-mutation to {}", sources[i]);
+
+
                     MessageOut<Mutation> msg = new Mutation(repairs[i]).createMessage(MessagingService.Verb.READ_REPAIR);
                     repairResults.add(MessagingService.instance().sendRR(msg, sources[i]));
                 }
             }
+
+
+
+
+
+
+//            public void onMergedPartitionLevelDeletion(DeletionTime mergedDeletion, DeletionTime[] versions)
+//            {
+//            }
+//
+//            public void onMergedRows(Row merged, Row[] versions)
+//            {
+//            }
+//
+//            public void onMergedRangeTombstoneMarkers(RangeTombstoneMarker merged, RangeTombstoneMarker[] versions)
+//            {
+//            }
+//
+//            public void close()
+//            {
+//            }
+
+
         }
     }
 

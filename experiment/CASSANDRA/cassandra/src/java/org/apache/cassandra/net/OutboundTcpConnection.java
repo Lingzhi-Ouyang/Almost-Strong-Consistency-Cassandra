@@ -81,6 +81,14 @@ public class OutboundTcpConnection extends Thread
     private static final String BUFFER_SIZE_PROPERTY = PREFIX + "otc_buffer_size";
     private static final int BUFFER_SIZE = Integer.getInteger(BUFFER_SIZE_PROPERTY, 1024 * 64);
 
+    private static final int intraDelayOnAverage = Integer.valueOf(System.getProperty("intraDelayOnAverage", "5"));
+    private static final int interDelayOnAverage = Integer.valueOf(System.getProperty("interDelayOnAverage", "25"));
+    private static final int intraDelayJitter = Integer.valueOf(System.getProperty("intraDelayJitter", "1"));
+    private static final int interDelayJitter = Integer.valueOf(System.getProperty("interDelayJitter", "5"));
+
+    private final OutboundTcpConnection.DelayedPollingThread delayedPollingThread = new OutboundTcpConnection.DelayedPollingThread();
+    public static final Random random = new Random();
+
     private static CoalescingStrategy newCoalescingStrategy(String displayName)
     {
         return CoalescingStrategies.newCoalescingStrategy(DatabaseDescriptor.getOtcCoalescingStrategy(),
@@ -150,6 +158,7 @@ public class OutboundTcpConnection extends Thread
         // in that case we won't rely on that targetVersion before we're actually connected and so the version
         // detection in connect() will do its job.
         targetVersion = MessagingService.instance().getVersion(pool.endPoint());
+        this.delayedPollingThread.start();
     }
 
     private static boolean isLocalDC(InetAddress targetHost)
@@ -295,11 +304,22 @@ public class OutboundTcpConnection extends Thread
             }
 
             long timestampMillis = NanoTimeToCurrentTimeMillis.convert(qm.timestampNanos);
-            writeInternal(qm.message, qm.id, timestampMillis);
 
-            completed++;
-            if (flush)
-                out.flush();
+
+            // Delay in normal distribution.
+            long delay;
+            if (isLocalDC(this.socket.getInetAddress()))
+                delay = Math.round(random.nextGaussian() * intraDelayJitter + intraDelayOnAverage);
+            else
+                delay = Math.round(random.nextGaussian() * interDelayJitter + interDelayOnAverage);
+            if (qm.message.verb == MessagingService.Verb.MUTATION || qm.message.verb == MessagingService.Verb.READ || qm.message.verb == MessagingService.Verb.REQUEST_RESPONSE)
+                logger.info("{} sending {} to {}, delay:{}", FBUtilities.getBroadcastAddress(), qm.message, this.socket.getInetAddress(), delay);
+            this.delayedPollingThread.queue.offer(new OutboundTcpConnection.DelayedMessage(qm, flush, timestampMillis), delay);
+//            writeInternal(qm.message, qm.id, timestampMillis);
+//
+//            completed++;
+//            if (flush)
+//                out.flush();
         }
         catch (Exception e)
         {
@@ -599,6 +619,80 @@ public class OutboundTcpConnection extends Thread
         boolean shouldRetry()
         {
             return false;
+        }
+    }
+
+    class DelayedPollingThread extends Thread {
+        OutboundTcpConnection.DelayedQueue queue = OutboundTcpConnection.this.new DelayedQueue(50);
+
+        DelayedPollingThread() {
+        }
+
+        public void run() {
+            try {
+                OutboundTcpConnection.DelayedMessage delayedMessage = this.queue.take();
+
+                while(true) {
+                    long currentTime;
+                    for(currentTime = System.currentTimeMillis(); delayedMessage.delayedTimeStamp - currentTime <= 0L; currentTime = System.currentTimeMillis()) {
+                        try {
+                            OutboundTcpConnection.this.writeInternal(delayedMessage.message.message, delayedMessage.message.id, delayedMessage.timeStamp);
+                            OutboundTcpConnection.this.completed++;
+                            if (delayedMessage.flush) {
+                                OutboundTcpConnection.this.out.flush();
+                            }
+                        } catch (Exception e1) {
+                            OutboundTcpConnection.this.disconnect();
+                            if (!(e1 instanceof IOException) && !(e1.getCause() instanceof IOException)) {
+                                OutboundTcpConnection.logger.error("error writing to {}", OutboundTcpConnection.this.poolReference.endPoint(), e1);
+                            } else {
+                                if (OutboundTcpConnection.logger.isTraceEnabled()) {
+                                    OutboundTcpConnection.logger.trace("error writing to {}", OutboundTcpConnection.this.poolReference.endPoint(), e1);
+                                }
+
+                                if (delayedMessage.message.shouldRetry()) {
+                                    try {
+                                        OutboundTcpConnection.this.backlog.put(new OutboundTcpConnection.RetriedQueuedMessage(delayedMessage.message));
+                                    } catch (InterruptedException e2) {
+                                        throw new AssertionError(e2);
+                                    }
+                                }
+                            }
+                        }
+
+                        delayedMessage = this.queue.take();
+                    }
+
+                    Thread.sleep(delayedMessage.delayedTimeStamp - currentTime);
+                }
+            } catch (InterruptedException e) {
+                OutboundTcpConnection.logger.debug("DelayedThread interruped");
+            }
+        }
+    }
+
+    class DelayedQueue extends LinkedBlockingQueue<OutboundTcpConnection.DelayedMessage> {
+        public DelayedQueue(int capacity) {
+            super(capacity);
+        }
+
+        public boolean offer(OutboundTcpConnection.DelayedMessage o, long delay) {
+            o.delayedTimeStamp = System.currentTimeMillis() + delay;
+            boolean ret = super.offer(o);
+            return ret;
+        }
+    }
+
+    class DelayedMessage {
+        long delayedTimeStamp;
+        OutboundTcpConnection.QueuedMessage message;
+        boolean flush;
+        long timeStamp;
+
+        public DelayedMessage(OutboundTcpConnection.QueuedMessage message, boolean flush, long timeStamp) {
+            this.message = message;
+            this.flush = flush;
+            this.timeStamp = timeStamp;
         }
     }
 }

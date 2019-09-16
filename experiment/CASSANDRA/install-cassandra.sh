@@ -1,8 +1,6 @@
 #!/bin/bash
 
 # $1 : user name
-# $2 : topology
-# $3 : start_ip (optional, default : 127.0.0.1)
 
 CLUSTER_NAME="$1_cluster"
 DC_MACHINE_NUM=(3 3 3)

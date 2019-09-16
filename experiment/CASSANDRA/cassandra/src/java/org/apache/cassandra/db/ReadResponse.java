@@ -40,9 +40,12 @@ import org.apache.cassandra.io.util.DataOutputBuffer;
 import org.apache.cassandra.net.MessagingService;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.FBUtilities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class ReadResponse
 {
+    protected static final Logger logger = LoggerFactory.getLogger(ReadResponse.class);
     // Serializer for single partition read response
     public static final IVersionedSerializer<ReadResponse> serializer = new Serializer();
     // Serializer for partition range read response (this actually delegate to 'serializer' in 3.0 and to
@@ -101,6 +104,7 @@ public abstract class ReadResponse
 
         public UnfilteredPartitionIterator makeIterator(ReadCommand command)
         {
+//            logger.info("DigestResponse.resolve,command:{}", command);
             throw new UnsupportedOperationException();
         }
 
@@ -167,6 +171,8 @@ public abstract class ReadResponse
 
         public UnfilteredPartitionIterator makeIterator(ReadCommand command)
         {
+//            logger.info("DataResponse.resolve,command:{}", command);
+
             try (DataInputBuffer in = new DataInputBuffer(data, true))
             {
                 // Note that the command parameter shadows the 'command' field and this is intended because

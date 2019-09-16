@@ -78,10 +78,10 @@ while true; do
             default_intra_jitter="$3"
             shift 3
         ;;
-        --nodefault)
-            nodefault="Attention! Default setting won't be executed."
-            shift
-        ;;
+        #--nodefault)
+        #    nodefault="Attention! Default setting won't be executed."
+        #    shift
+        #;;
         --keep)
             keep="Attention! Still running Cassandra after the experiments."
             shift
@@ -134,7 +134,7 @@ python get_ycsb_traces.py $traces_dir
 sleep 5
 cd ../../cassandra
 if [[ -z $keep ]]; then
-    echo -e "\n--------Stoping and deleting nodes, tuning jitter=$jitter--------"
+    echo -e "\n--------Stoping and deleting nodes--------"
     ./stop-and-delete.sh $cluster
 else
     echo -e "\n$keep"

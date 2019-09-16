@@ -32,7 +32,7 @@ echo "CASSANDRA_CONF:$CASSANDRA_CONF"
 #cassandra_bin="$CASSANDRA_HOME/build/classes/main"
 #cassandra_bin="$cassandra_bin:$CASSANDRA_HOME/build/classes/thrift"
 
-#cassandra_bin="$CASSANDRA_HOME/build/apache-cassandra-3.7-SNAPSHOT.jar"":$CASSANDRA_HOME/build/apache-cassandra-thrift-3.7-SNAPSHOT-DELAY.jar"
+#cassandra_bin="$CASSANDRA_HOME/build/apache-cassandra-3.7-SNAPSHOT.jar"
 cassandra_bin="$CASSANDRA_HOME/build/apache-cassandra-3.7-SNAPSHOT_ASC.jar"
 echo "CASSANDRA_BIN:$cassandra_bin"
 
