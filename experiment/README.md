@@ -1,6 +1,10 @@
 # Almost-Strong-Consistency-Cassandra
 
-Implementations, experiments and results of ASC based on modified Cassandra. There are 4 main directories here:
+Implementations, experiments and results of ASC based on modified Cassandra. 
+
+To conduct our experiments, **Openjdk 8 JDK / Oracle Java 8**  and **Python 2.7** are required. [PyPy](http://pypy.org) is optional. 
+
+There are 4 main directories here:
 
 * *bin* : Main entry of the experiments. 
   * *workload_test.sh* : 
@@ -21,7 +25,7 @@ Implementations, experiments and results of ASC based on modified Cassandra. The
   * *bin* :
   * *lib* :
   * *workloads* :
-* *traces* : Results generated in experiments and displayed in figures. 
+* <span id="traces">*traces*</span> : Results generated in experiments and displayed in figures. 
 
 
 
@@ -48,7 +52,7 @@ The main entry to conducted the experiments is in the directory *bin* .
 
 To quickly conduct the experiments by tuning workloads (including client number, read-write ratio, operation speed, replica factor, quorum level, *etc*.) / inter-DC delay / inter-DC delay jitter, use *workload_test.sh* , *delay_test.sh* or *jitter_test.sh* accordingly. 
 
-e.g. to set up a Cassandra cluster named *test* with *3*-DC topology, each data center consisting of 3 instances (i.e. Cassandra nodes), you can use the command below:
+e.g. to set up a Cassandra cluster named *test* with *3*-DC topology, each data center consisting of 3 instances (i.e. Cassandra nodes), you can input the command below:
 
 ```shell
 ./workload.sh -n test -t 3_3_3
@@ -63,7 +67,7 @@ If you want to conduct the experiments ***manually*** in a step-by-step way, Ple
 
 
 
-### <span id="parameter"> Optional Parameters </span>
+### <span id="parameters"> Optional Parameters </span>
 
 Optional parameters for *workload_test.sh* , *delay_test.sh* and *jitter_test.sh* are listed as follows: 
 
@@ -85,21 +89,29 @@ Optional parameters for *workload_test.sh* , *delay_test.sh* and *jitter_test.sh
 
 
 
-### <span id="termination"> Termination </span>
+### <span id="termination">How to Termimate</span>
 
 After the experiments are over, if the Cassandra instances are still running (e.g. when using the option `--keep` or configure and run Cassandra manually), several ways are provided to terminate the Cassandra instances of the {*name*}_*cluster*. 
 
 e.g.
 
-`./bin/stop.sh {name}` : Kill the process of all Cassandra nodes but keep node files in the cluster directory   {*name*}_*cluster*. 
+`./stop.sh {name}` : Kill the process of all Cassandra nodes but keep node files in the cluster directory   {*name*}_*cluster*. 
 
- `./bin/delete.sh {name}` : Delete node files and the cluster directory {*name*}_*cluster*. 
+ `./delete.sh {name}` : Delete node files and the cluster directory {*name*}_*cluster*. 
 
- `./bin/stop-annd-delete.sh {name}` : Kill the process of all Cassandra nodes, then delete node files and the cluster directory {*name*}_*cluster* . 
+ `./stop-annd-delete.sh {name}` : Kill the process of all Cassandra nodes, then delete node files and the cluster directory {*name*}_*cluster* . 
 
- `./bin/kill.sh {id1 id2 ...}` : Kill the process of Cassandra nodes *id1*, *id2*, ... whether node files or the cluster directory   {*name*}_*cluster* exist or not. 
+ `./kill.sh {id1 id2 ...}` : Kill the process of Cassandra nodes *id1*, *id2*, ... whether node files or the cluster directory   {*name*}_*cluster* exist or not. 
 
- `./bin/kill.sh ` : Kill the process of all Cassandra nodes whether node files or the cluster directory   {*name*}_*cluster* exist or not. 
+ `./killall.sh ` : Kill the process of all Cassandra nodes whether node files or the cluster directory   {*name*}_*cluster* exist or not. 
+
+
+
+If you want to terminate the experiments during the experiments, just use `ctrl+c` directly. 
+
+In this way, the process of some Cassandra nodes may keep running, and you need to use  `./kill.sh {id1 id2 ...}`  or `./killall.sh` to kill all node process. 
+
+
 
 
 
@@ -107,21 +119,19 @@ e.g.
 
 To emulate a distributed datastore in the single-host environment, you need to set up and run multiple Cassandra instances in the following steps. 
 
-`cd Cassandra`
+`cd CASSANDRA`
 
-
-
-### 0. Configure
+### 0. Configuration
 
 First of all, you need to modify the configuration template ***Cassandra/cassandra/conf/cassandra.yaml*** to exactly what you desire (the option *hinted-handoff* can be set later). 
 
 
 
-To configure the Cassandra cluster  you can:
+To configure the Cassandra cluster  you can input as below:
 
 `./install-cassandra.sh {name} [-t topology] [-h] [-rt read_timeout] [-wt write_timeout]`
 
-For the detailed meaning of above parameters, please refer to the [optional parameters](#parameters).
+For the detailed meaning of above parameters, please refer to the [Optional Parameters](#parameters).
 
 Attention: you must provide the *name* of the cluster! Other parameters are optional. If omitted, they will be set using the default values.
 
@@ -137,7 +147,7 @@ Then, in the directory *CASSANDRA*, a sub-directory named *test_cluster* will be
 
 
 
-### 1. Run
+### 1. Running
 
 After setting above configurations, start the Cassandra servers. 
 
@@ -153,16 +163,102 @@ The meaning of each parameter:
 * **{*enableSnitch*}** : Optional : *true* / *false* . ***Default*** : *false*
 * **{*enableDigest*}** : Optional : *true* / *false* . ***Default*** : *false*
 * **{*enableRepair*}** : Optional : *true* / *false* . ***Default*** : *false*
-* **{*AverageIntraDelay*}** **{*IntraJitter*}** : Set intra-datacenter delay in normal distribution N (*AverageIntraDelay*, *IntraJitter* <sup>2</sup>) in milliseconds. Optional : *positive integer . ***Default*** : *AverageIntraDelay* = *5* , *IntraJitter* = *1* 
-* **{*AverageInterDelay*}** **{*InterJitter*}** : Set inter-datacenter delay in normal distribution N (*AverageInterDelay*, *InterJitter* <sup>2</sup>) in milliseconds. Optional : *positive integer . ***Default*** : *AverageInterDelay* = *50* , *InterJitter* = *25* 
+* **{*AverageIntraDelay*}** **{*IntraJitter*}** : Set intra-datacenter delay in normal distribution N (*AverageIntraDelay*, *IntraJitter* <sup>2</sup>) in milliseconds. Optional : *positive integer . **Default*** : *AverageIntraDelay* = *5* , *IntraJitter* = *1* 
+* **{*AverageInterDelay*}** **{*InterJitter*}** : Set inter-datacenter delay in normal distribution N (*AverageInterDelay*, *InterJitter* <sup>2</sup>) in milliseconds. Optional : *positive integer . **Default*** : *AverageInterDelay* = *50* , *InterJitter* = *25* 
 
 
 
-### 2. Terminate
 
-Please refer to the [termination](#termination).
+
+### 2. Termination
+
+Please refer to the usage of the commands in [How to Terminate](#termination). These commands also work if the present working directory is *CASSANDRA* .
 
 
 
 ## <span id="ycsb"> Configure and Run YCSB Instances </span>
+
+To emulate multiple clients issuing concurrent operations in the single-host environment, you need to set up and run multiple YCSB instances in the following steps. 
+
+`cd YCSB/bin`
+
+
+
+### 0. Configuration
+
+First of all, you need to modify the configuration file ***conf.py*** to exactly what you desire . 
+
+*conf.py* sets detailed parameters for the generated traces, including:
+
+* **server parameters** : *replica factor*, *write consistency level*, *read consistency level*, … (Note: some parameters' default values can be modified or overrode by commands, including *default_snitch_strategy*, *default_write_process*, *default_read_process*, *default_server_delay_in_ms*, *default_server_delay_jitter_in_ms*, *default_intra_delay_in_ms*, *default_intra_delay_jitter_in_ms* )
+* **client parameters** : client number, read proportion, operation number, operation speed, … 
+* **algorithm parameters** : write round-trip, read round-trip, ...
+* **experiment parameters **: execution time, repeat times, ...
+
+
+
+*conf.py* is required to be set correctly, or it will impact the results of trace generation, metrics calculation as well as result visualization. 
+
+Users need to designate:
+
+* one / several *optional* values for each parameter. 
+* one *default* value for each parameter. The default value is recommended to be one of the optional values for that parameter. 
+* which are tunable / testing parameters. 
+
+***Attention: all parameters are supposed to be set in conf.py before YCSB trace generation!!!*** 
+
+
+
+### 1. Trace Generation
+
+After the conf.py is set, traces can be generated:
+
+`python get_ycsb_traces.py {dirname}` 
+
+A directory *dir_name* will be created under the parent directory [*traces*](#traces). Under the directory *dir_name*, each trace will be stored in an independent folder named by its environment parameters. 
+
+
+
+### 2. Metrics Calculation
+
+Note that all operations in the experiments are applied to the same register. 
+
+We focus on two main metrics:
+
+* Consistency/ *k*-atomicity : *k*<sub>max</sub> , P(*k*=1,2,3,…). Usually, the results of *k > 10* cannot be solved in limited time, so we only focus on the part *k < 10* .
+* Latency : read latency / write latency 
+
+To calculate the above metrics: 
+
+`python atomicity_latency_calculation.py {dirname}  `  or
+
+`pypy atomicity_latency_calculation.py {dirname}  `  for faster speed. 
+
+All the statistics will be stored in a text file name *{dirname}.txt* under the directory *dir_name* .
+
+
+
+### 3. Result Visualization
+
+To transfer the above statistics into figures:
+
+`python result_display.py {dirname}`
+
+***Attention: Ensure the paramter names of display_name_list in conf.py are what you desire before the visualization. Only tunable paramters with multiple optional values will be plot into figures.*** 
+
+
+
+Or, you can use the command below:
+
+`./auto_exec.sh {dirname}`
+
+This is equal to: 
+
+```bash
+python get_ycsb_traces.py {dirname} 
+pypy atomicity_latency_calculation.py {dirname}
+python result_display.py {dirname}
+```
+
+
 
