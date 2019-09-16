@@ -34,9 +34,7 @@ The experiments are conducted using a C/S architecture. The figure below shows a
 
 ![](https://github.com/Lingzhi-Ouyang/Almost-Strong-Consistency-Cassandra/blob/master/experiment/architecture.png)
 
-```xml
-<a href="#目标内容">内容</a>
-```
+
 
 ## Perform the Experiments
 
@@ -50,8 +48,8 @@ e.g. to run the dafault experiments on Cassandra instances with the 3-DC topolog
 
 In this way, the whole procedures will be executed ***automatically***, including the steps in:
 
-* [Configure and run Cassandra instances](#Cassandra)
-* [Configure and run YCSB instances](#YCSB)
+* [Configure and run Cassandra instances](#cassandra)
+* [Configure and run YCSB instances](#ycsb)
 
 If you want to conduct the experiments ***manually*** in a step-by-step way, Please refer to above two sections.  
 
@@ -92,7 +90,7 @@ e.g.
 
 
 
-## Configure and Run Cassandra Instances{#Cassandra}
+## Configure and Run Cassandra Instances{#cassandra}
 
 To emulate a distributed datastore in the local environment, you need to set up and run multiple Cassandra instances in the following steps. 
 
@@ -128,5 +126,5 @@ The value of timeout for each read / write operation is 500ms / 1000ms .
 
 
 
-## Configure and Run YCSB Instances{#YCSB}
+## Configure and Run YCSB Instances{#ycsb}
 
