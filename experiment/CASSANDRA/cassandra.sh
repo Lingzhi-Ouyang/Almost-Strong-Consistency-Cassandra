@@ -44,7 +44,7 @@ echo "Finish setting up delay info in conf.py!"
 
 # sleep 10
 
-# process the fisrt parameter
+# $1 : cluster name
 dir=$1"_cluster"
 lsdir=`ls $dir`
 dirarr=($lsdir)

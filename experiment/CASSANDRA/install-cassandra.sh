@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# $1 : user name
+# $1 : cluster name
 
 CLUSTER_NAME="$1_cluster"
 DC_MACHINE_NUM=(3 3 3)
