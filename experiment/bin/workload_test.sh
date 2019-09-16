@@ -9,8 +9,8 @@ hint=""
 read_timeout=""
 write_timeout=""
 info="@workload"
-nodefault=''
-keep=''
+nodefault=""
+keep=""
 
 # base directory
 cd `dirname $0`

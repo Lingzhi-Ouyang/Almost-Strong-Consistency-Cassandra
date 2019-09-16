@@ -32,9 +32,11 @@ The experiments are conducted using a C/S architecture. The figure below shows a
 * **Servers: Cassandra instances.** By default, 9 instances of Cassandra are run up to simulate a cloud storage system with up to 3 data centers, each consisting of no more than 3 instances. Each Cassandra instance, also denoted a node, acts as a server replica. 
 * **Clients: YCSB instances.** The detailed configurations of the YCSB workloads are set up in *YCSB/bin/conf.py* .
 
-![](https://github.com/Lingzhi-Ouyang/Almost-Strong-Consistency-Cassandra/blob/master/experiment/architecture.pdf)
+![](https://github.com/Lingzhi-Ouyang/Almost-Strong-Consistency-Cassandra/blob/master/experiment/architecture.png)
 
-
+```xml
+<a href="#目标内容">内容</a>
+```
 
 ## Perform the Experiments
 
@@ -86,7 +88,7 @@ e.g.
 
  `./bin/stop-annd-delete.sh {name}` 
 
- `./bin/kill.sh {name}` 
+ `./bin/kill.sh {name}`
 
 
 
@@ -114,9 +116,13 @@ Then in the directory *CASSANDRA*, a sub-directory named *test_cluster* will be 
 
 The Cassandra instances constitute a distributed datastore with 3 data centers, each consisting of 3 instances. 
 
-Hinted-handoff is disabled.
+Hinted-handoff in Cassandra is disabled.
 
 The value of timeout for each read / write operation is 500ms / 1000ms . 
+
+
+
+
 
 
 
