@@ -2,7 +2,7 @@
 
 Implementations, experiments and results of ASC based on modified Cassandra. There are 4 main directories here:
 
-* *bin* : Main entry of the experiments. 
+* *bin* : Main entries of the experiments. 
   * *workload_test.sh* : 
   * *delay_test.sh* : 
   * *jitter_test.sh* : 
@@ -21,7 +21,7 @@ Implementations, experiments and results of ASC based on modified Cassandra. The
   * *bin* :
   * *lib* :
   * *workloads* :
-* *traces* : results generated in experiments and displayed in figures. 
+* *traces* : Results generated in experiments and displayed in figures. 
 
 
 
@@ -92,6 +92,8 @@ e.g.
 
 ## Configure and Run Cassandra Instances{#cassandra}
 
+<span id="cassandra"> 123 </span>
+
 To emulate a distributed datastore in the local environment, you need to set up and run multiple Cassandra instances in the following steps. 
 
 `cd Cassandra`
@@ -106,21 +108,17 @@ For the detailed meaning of above parameters, please refer to the [optional para
 
 Attention: you must provide the *name* of the cluster! 
 
-e.g. 
+e.g. To emulate a datastore with 3 data centers, each consisting of 3 instances,
+
+where hinted-handoff in Cassandra is disabled, and timeout for each read / write operation is 500ms / 1000ms respectively:
 
 `./install-cassandra.sh test -t 3_3_3 -rt 500 -wt 1000`
 
-Then in the directory *CASSANDRA*, a sub-directory named *test_cluster* will be created. All configurations, logs and data of each Cassandra instance will be stored in *test_cluster/node{id}* , where *id*=1/2/…/9. 
-
-The Cassandra instances constitute a distributed datastore with 3 data centers, each consisting of 3 instances. 
-
-Hinted-handoff in Cassandra is disabled.
-
-The value of timeout for each read / write operation is 500ms / 1000ms . 
+Then, in the directory *CASSANDRA*, a sub-directory named *test_cluster* will be created. All configurations, logs and data of each Cassandra instance will be stored in *test_cluster/node{id}* , where *id*=1/2/…/9. 
 
 
 
-
+After setting the configurations, 
 
 
 
