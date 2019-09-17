@@ -63,15 +63,18 @@ public abstract class AbstractReadExecutor
     protected final ReadCallback handler;
     protected final TraceState traceState;
     protected static final boolean allowReadDigest = Boolean.valueOf(System.getProperty("allowReadDigest", "False"));
-    private static final boolean allowForegroundRepair = Boolean.valueOf(System.getProperty("allowForegroundRepair", "False"));
-    private static final boolean allowSmartRouting = Boolean.valueOf(System.getProperty("allowSmartRouting", "False"));
 
-
-   AbstractReadExecutor(Keyspace keyspace, ReadCommand command, ConsistencyLevel consistencyLevel, List<InetAddress> targetReplicas)
+    /**
+     * + knob of digest read:
+     * + AllowReadDigest: the official way: One full read + digest read for the rest.
+     * + If not allowed, users can select the way of full read in required number of replicas.
+     */
+    AbstractReadExecutor(Keyspace keyspace, ReadCommand command, ConsistencyLevel consistencyLevel, List<InetAddress> targetReplicas)
     {
         this.command = command;
         this.targetReplicas = targetReplicas;
         this.traceState = Tracing.instance.get();
+        // + knob of digest read.
         if (!allowReadDigest){
             this.handler = new ReadCallback(new DataResolver(keyspace, command, consistencyLevel, targetReplicas.size()), consistencyLevel, command, targetReplicas);
         }
@@ -87,20 +90,6 @@ public abstract class AbstractReadExecutor
             command.setDigestVersion(digestVersion);
         }
     }
-
-
-
-
-    // Forbid digest requests.
-//    AbstractReadExecutor(Keyspace keyspace, ReadCommand command, ConsistencyLevel consistencyLevel, List<InetAddress> targetReplicas)
-//    {
-//        this.command = command;
-//        this.targetReplicas = targetReplicas;
-//        this.handler = new ReadCallback(new DataResolver(keyspace, command, consistencyLevel, targetReplicas.size()), consistencyLevel, command, targetReplicas);
-//        this.traceState = Tracing.instance.get();
-//    }
-
-
 
     protected void makeDataRequests(Iterable<InetAddress> endpoints)
     {
@@ -190,11 +179,6 @@ public abstract class AbstractReadExecutor
         ColumnFamilyStore cfs = keyspace.getColumnFamilyStore(command.metadata().cfId);
         SpeculativeRetryParam retry = cfs.metadata.params.speculativeRetry;
 
-        // Never speculative retry in experiments.
-//        if ( (!allowSmartRouting) || (!allowReadDigest) || (!allowForegroundRepair)){
-//            return new NeverSpeculatingReadExecutor(keyspace, command, consistencyLevel, targetReplicas);
-//        }
-
         // Speculative retry is disabled *OR* there are simply no extra replicas to speculate.
         if (retry.equals(SpeculativeRetryParam.NONE) || consistencyLevel.blockFor(keyspace) == allReplicas.size())
             return new NeverSpeculatingReadExecutor(keyspace, command, consistencyLevel, targetReplicas);
@@ -238,16 +222,9 @@ public abstract class AbstractReadExecutor
         }
 
 
-        // Forbid digest requests.
-//        public void executeAsync()
-//        {
-//            makeDataRequests(targetReplicas.subList(0, targetReplicas.size()));
-//        }
-
-
-        // Allow digest requests.
         public void executeAsync()
         {
+            // + knob of digest read.
             if (!allowReadDigest){
                 makeDataRequests(targetReplicas.subList(0, targetReplicas.size()));
             }
@@ -293,7 +270,7 @@ public abstract class AbstractReadExecutor
             // that the last replica in our list is "extra."
             List<InetAddress> initialReplicas = targetReplicas.subList(0, targetReplicas.size() - 1);
 
-            // if digest read is forbidden
+            // if digest read is forbidden.
             if (!allowReadDigest){
                 makeDataRequests(targetReplicas.subList(0, initialReplicas.size()));
                 return;
@@ -328,7 +305,7 @@ public abstract class AbstractReadExecutor
             {
                 // Could be waiting on the data, or on enough digests.
                 ReadCommand retryCommand = command;
-                // if digest read is forbidden
+                // if digest read is forbidden.
                 if (!allowReadDigest){
                     retryCommand = command.copy().setIsDigestQuery(false);
                 }

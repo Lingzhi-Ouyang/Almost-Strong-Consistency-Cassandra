@@ -1040,86 +1040,6 @@ public class StorageProxy implements StorageProxyMBean {
      *
      * @throws OverloadedException if the hints cannot be written/enqueued
      */
-//    public static void sendToHintedEndpoints(final Mutation mutation,
-//                                             Iterable<InetAddress> targets,
-//                                             AbstractWriteResponseHandler<IMutation> responseHandler,
-//                                             String localDataCenter,
-//                                             Stage stage)
-//    throws OverloadedException
-//    {
-//        // extra-datacenter replicas, grouped by dc
-//        Map<String, Collection<InetAddress>> dcGroups = null;
-//        // only need to create a Message for non-local writes
-//        MessageOut<Mutation> message = null;
-//
-//        boolean insertLocal = false;
-//        ArrayList<InetAddress> endpointsToHint = null;
-//
-//        for (InetAddress destination : targets)
-//        {
-//            checkHintOverload(destination);
-//
-//            if (FailureDetector.instance.isAlive(destination))
-//            {
-//                if (canDoLocalRequest(destination))
-//                {
-//                    insertLocal = true;
-//                }
-//                else
-//                {
-//                    // belongs on a different server
-//                    if (message == null)
-//                        message = mutation.createMessage();
-//                    String dc = DatabaseDescriptor.getEndpointSnitch().getDatacenter(destination);
-//                    // direct writes to local DC or old Cassandra versions
-//                    // (1.1 knows how to forward old-style String message IDs; updated to int in 2.0)
-//                    if (localDataCenter.equals(dc))
-//                    {
-//                        MessagingService.instance().sendRR(message, destination, responseHandler, true);
-//                    }
-//                    else
-//                    {
-//                        Collection<InetAddress> messages = (dcGroups != null) ? dcGroups.get(dc) : null;
-//                        if (messages == null)
-//                        {
-//                            messages = new ArrayList<>(3); // most DCs will have <= 3 replicas
-//                            if (dcGroups == null)
-//                                dcGroups = new HashMap<>();
-//                            dcGroups.put(dc, messages);
-//                        }
-//                        messages.add(destination);
-//                    }
-//                }
-//            }
-//            else
-//            {
-//                if (shouldHint(destination))
-//                {
-//                    if (endpointsToHint == null)
-//                        endpointsToHint = new ArrayList<>(Iterables.size(targets));
-//                    endpointsToHint.add(destination);
-//                }
-//            }
-//        }
-//
-//        if (endpointsToHint != null)
-//            submitHint(mutation, endpointsToHint, responseHandler);
-//
-//        if (insertLocal) {
-//            logger.info("perform locally, stage:{}, responseHandler: {}", stage, responseHandler);
-//            performLocally(stage, Optional.of(mutation), mutation::apply, responseHandler);
-//        }
-//
-//        if (dcGroups != null)
-//        {
-//            // for each datacenter, send the message to one node to relay the write to other replicas
-//            if (message == null)
-//                message = mutation.createMessage();
-//
-//            for (Collection<InetAddress> dcTargets : dcGroups.values())
-//                sendMessagesToNonlocalDC(message, dcTargets, responseHandler);
-//        }
-//    }
     public static void sendToHintedEndpoints(final Mutation mutation,
                                              Iterable<InetAddress> targets,
                                              AbstractWriteResponseHandler<IMutation> responseHandler,
@@ -1136,14 +1056,13 @@ public class StorageProxy implements StorageProxyMBean {
 
 //        /**
 //         *  Attention!
-//         *  For quorum-tradeoff experiment, one simple strategy for adversary argument:
-//         *  Write quorum, which assumes other unwritten replicas crash during the write.
+//         *  For ASC experiment, one way to emulate crash failures in the minority of replicas:
+//         *  only the majority of replicas updated successfully while other unwritten replicas crash during the write.
 //         *  select the exact quorum number of replicas for writes instead of writing all replicas.
 //         *  Note that at the first time, all replicas should be inserted into an initial value,
 //         *  otherwise, reads would raise the Unexpected exception during request/query
 //         *  java.lang.UnsupportedOperationException: null
 //         */
-//
 //        if (responseHandler.consistencyLevel == ConsistencyLevel.QUORUM)
 //        {
 //            List<InetAddress> targetList = new LinkedList<>();
@@ -1153,6 +1072,11 @@ public class StorageProxy implements StorageProxyMBean {
 //            logger.info("sendToHintedEndpoints - after shuffle:{}", targets);
 //        }
 
+        /**
+         * + knob of snitch (for write):
+         * + AllowSmartRouting: the official way: use snitch strategy and select a prefer group of replicas for data access.
+         * + If not allowed, select replicas in random.
+         */
         if (!allowSmartRouting) {
             List<InetAddress> targetList = new LinkedList<>();
             targets.forEach(single -> targetList.add(single));
@@ -1725,10 +1649,16 @@ public class StorageProxy implements StorageProxyMBean {
         return getLiveSortedEndpoints(keyspace, StorageService.instance.getTokenMetadata().decorateKey(key));
     }
 
+    /**
+     * + knob of snitch (for read):
+     * + AllowSmartRouting: the official way: use snitch strategy and select a prefer group of replicas for data access.
+     * + If not allowed, select replicas in random.
+     */
     public static List<InetAddress> getLiveSortedEndpoints(Keyspace keyspace, RingPosition pos) {
         List<InetAddress> liveEndpoints = StorageService.instance.getLiveNaturalEndpoints(keyspace, pos);
+        // + knob of snitch.
         if (!allowSmartRouting) {
-            Collections.shuffle(liveEndpoints);
+            Collections.shuffle(liveEndpoints); // Order replicas in random.
         } else {
             DatabaseDescriptor.getEndpointSnitch().sortByProximity(FBUtilities.getBroadcastAddress(), liveEndpoints);
         }

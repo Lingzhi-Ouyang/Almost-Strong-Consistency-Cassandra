@@ -142,6 +142,7 @@ public final class HintsService implements HintsServiceMBean
      * @param hostIds host ids of the hint's target nodes
      * @param hint the hint to store
      */
+    public void write(Iterable<UUID> hostIds, Hint hint)
     {
         if (isShutDown)
             throw new IllegalStateException("HintsService is shut down and can't accept new hints");

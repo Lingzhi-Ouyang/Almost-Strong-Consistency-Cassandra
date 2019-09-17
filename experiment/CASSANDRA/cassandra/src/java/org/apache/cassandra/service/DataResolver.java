@@ -288,13 +288,15 @@ public class DataResolver extends ResponseResolver
                 }
             }
 
-
+            /**
+             * + knob of foreground read repair:
+             * + AllowReadRepair: the official way: synchronize stale replicas right away once found during read.
+             * + If not allowed, ignore stale replicas and do no repair.
+             */
             public void close()
             {
-                // Forbid foreground read repair.
-//                logger.info("Allow foreground repair:{}", allowForegroundRepair);
+                // + knob of forced read repair.
                 if (!allowForegroundRepair) return;
-                // Allow foreground read repair.
                 for (int i = 0; i < repairs.length; i++)
                 {
                     if (repairs[i] == null)
@@ -309,29 +311,6 @@ public class DataResolver extends ResponseResolver
                     repairResults.add(MessagingService.instance().sendRR(msg, sources[i]));
                 }
             }
-
-
-
-
-
-
-//            public void onMergedPartitionLevelDeletion(DeletionTime mergedDeletion, DeletionTime[] versions)
-//            {
-//            }
-//
-//            public void onMergedRows(Row merged, Row[] versions)
-//            {
-//            }
-//
-//            public void onMergedRangeTombstoneMarkers(RangeTombstoneMarker merged, RangeTombstoneMarker[] versions)
-//            {
-//            }
-//
-//            public void close()
-//            {
-//            }
-
-
         }
     }
 
