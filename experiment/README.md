@@ -6,9 +6,9 @@ To conduct our experiments, **Openjdk 8 JDK / Oracle Java 8**  and **Python 2.7*
 
 There are 4 main directories here:
 
-* *bin* : Main entry of the experiments, including the bash scripts to start / terminate batch experiments automatically. 
-* *CASSANDRA* : The source code of modified Cassandra for the ASC experiments, the bash scripts to configure and run Cassandra instances, as well as Cassandra node files (including configuration, data and logs). 
-* *YCSB* : The bash scripts of the configuration of YCSB workloads, the generation of traces, the calculation of metrics and the visualization of results. 
+* [*bin*]() : Main entry of the experiments, including the bash scripts to start / terminate batch experiments automatically. 
+* [*CASSANDRA*](https://github.com/Lingzhi-Ouyang/Almost-Strong-Consistency-Cassandra/tree/master/experiment/CASSANDRA) : The source code of modified Cassandra for the ASC experiments, the bash scripts to configure and run Cassandra instances, as well as Cassandra node files (including configuration, data and logs). 
+* [*YCSB*](https://github.com/Lingzhi-Ouyang/Almost-Strong-Consistency-Cassandra/tree/master/experiment/YCSB) : The bash scripts of the configuration of YCSB workloads, the generation of traces, the calculation of metrics and the visualization of results. 
 * <span id="traces">*traces*</span> : The generated results, calculated metrics and plotted figures. 
 
 
