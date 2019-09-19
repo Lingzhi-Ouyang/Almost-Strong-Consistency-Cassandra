@@ -1,4 +1,4 @@
-# Almost-Strong-Consistency-Cassandra
+# ASC Experiments 
 
 Implementations, experiments and results of ASC based on modified Cassandra. 
 
